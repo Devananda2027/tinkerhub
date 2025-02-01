@@ -43,8 +43,8 @@
             let inputDiv = document.getElementById("inputs");
             inputDiv.innerHTML = '';
             for (let i = 0; i < numPeople; i++) {
-                inputDiv.innerHTML += `
-                    <input type="text" id="name${i}" placeholder="Name">
+                inputDiv.innerHTML += `  
+                    <input type="text" id="name${i}" placeholder="Name"><br>
                     <input type="number" id="expense${i}" placeholder="Initial Expense" min="0"><br>
                 `;
             }
@@ -83,7 +83,7 @@
                 itemRow.innerHTML = `<b>${item.name} - ₹${item.price.toFixed(2)}</b><br>`;
                 let userInput = document.createElement("input");
                 userInput.type = "text";
-                userInput.placeholder = "Enter names of users who consumed this item";
+                userInput.placeholder = "Enter names of users who consumed this item (comma separated)";
                 userInput.onchange = function() {
                     assignItemToUser(index, userInput.value);
                 };
@@ -100,12 +100,11 @@
         }
 
         function calculateSplit() {
-            let transactions = [];
-            let totalPerPerson = 0;
             let userTotals = {};
+            let totalExpense = 0;
 
             // Get initial expenses and store them
-            for (let i = 0; i < people.length; i++) {
+            for (let i = 0; i < document.getElementById("numPeople").value; i++) {
                 let name = document.getElementById(`name${i}`).value;
                 let expense = parseFloat(document.getElementById(`expense${i}`).value);
                 if (!name || isNaN(expense) || expense < 0) {
@@ -113,6 +112,7 @@
                     return;
                 }
                 userTotals[name] = { initialExpense: expense, itemExpense: 0, totalOwed: 0 };
+                totalExpense += expense;
             }
 
             // Calculate item-based expenses
@@ -125,22 +125,24 @@
                 });
             });
 
-            // Calculate how much each person owes in total (initial + item expenses)
-            let totalExpense = Object.values(userTotals).reduce((sum, user) => sum + user.initialExpense + user.itemExpense, 0);
-            let avg = totalExpense / Object.keys(userTotals).length;
+            // Calculate total expense and balance per person
+            let avgExpense = totalExpense / Object.keys(userTotals).length;
 
-            // Adjust based on how much they have already paid
+            // Adjust the total amount each person owes or is owed
             for (let user in userTotals) {
                 let totalPaid = userTotals[user].initialExpense + userTotals[user].itemExpense;
-                userTotals[user].totalOwed = avg - totalPaid;
+                userTotals[user].totalOwed = avgExpense - totalPaid;
             }
 
             // Prepare the results
+            let transactions = [];
             for (let user in userTotals) {
-                if (userTotals[user].totalOwed > 0) {
-                    transactions.push(`${user} is owed ₹${userTotals[user].totalOwed.toFixed(2)}`);
-                } else if (userTotals[user].totalOwed < 0) {
-                    transactions.push(`${user} owes ₹${Math.abs(userTotals[user].totalOwed).toFixed(2)}`);
+                let owedAmount = userTotals[user].totalOwed;
+
+                if (owedAmount > 0) {
+                    transactions.push(`${user} is owed ₹${owedAmount.toFixed(2)}`);
+                } else if (owedAmount < 0) {
+                    transactions.push(`${user} owes ₹${Math.abs(owedAmount).toFixed(2)}`);
                 } else {
                     transactions.push(`${user} has no balance.`);
                 }
